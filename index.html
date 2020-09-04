@@ -30,11 +30,11 @@
             nodeID = parseInt(nodeID);
             const node = network.body.data.nodes.get(nodeID);
             if (!node) return;
-            let color = 'green';
+            let color = '#CCEBC5';
             if (state.done.indexOf(nodeID) > -1) {
-                color = 'blue';
+                color = '#B3CDE3';
             } else if (state.unavailable.indexOf(nodeID) > -1) {
-                color = 'red'
+                color = '#FBB4AE'
             }
             node.color = {background: color, highlight: {background: color}}
             network.body.data.nodes.update(node);
