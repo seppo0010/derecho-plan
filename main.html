@@ -1,0 +1,80 @@
+<!doctype html>
+<html>
+<head>
+  <title>Vis Network | Basic usage</title>
+
+  <script type="text/javascript" src="vis-network.min.js"></script>
+
+  <style type="text/css">
+    html, body, #mynetwork {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+<div id="mynetwork"></div>
+
+<script type="text/javascript">
+(async () => {
+    const dot = await (await fetch('main.dot')).text()
+    const container = document.getElementById('mynetwork');
+    const data = vis.parseDOTNetwork(dot);
+    const network = new vis.Network(container, data);
+    const state = read_cookie('state') || {
+        done: [],
+        unavailable: [],
+    };
+    const updateNetworkNodeColors = () => {
+        Object.keys(network.body.nodes).forEach((nodeID) => {
+            nodeID = parseInt(nodeID);
+            const node = network.body.data.nodes.get(nodeID);
+            if (!node) return;
+            let color = 'green';
+            if (state.done.indexOf(nodeID) > -1) {
+                color = 'blue';
+            } else if (state.unavailable.indexOf(nodeID) > -1) {
+                color = 'red'
+            }
+            node.color = {background: color, highlight: {background: color}}
+            network.body.data.nodes.update(node);
+        })
+    }
+    const updateNetworkNodeAvailability = () => {
+        state.unavailable.splice(0, state.unavailable.length);
+        Object.keys(network.body.edges).forEach((edgeID) => {
+            const edge = network.body.data.edges.get(edgeID)
+            if (state.done.indexOf(edge.from) === -1) {
+                state.unavailable.push(edge.to)
+            }
+        })
+    }
+    updateNetworkNodeAvailability();
+    updateNetworkNodeColors()
+    network.on('doubleClick', (ev) => {
+        var nodeID = ev.nodes[0]
+        if (nodeID) {
+            const index = state.done.indexOf(nodeID);
+            if (index === -1) {
+                state.done.push(nodeID)
+            } else {
+                state.done.splice(index, 1)
+            }
+            updateNetworkNodeAvailability();
+            bake_cookie('state', state);
+            updateNetworkNodeColors()
+        }
+    });
+})()
+function bake_cookie(name, value) {
+    var cookie = [name, '=', encodeURIComponent(JSON.stringify(value)), '; domain=', window.location.host.toString(), '; path=/;SameSite=Lax'].join('');
+    document.cookie = cookie;
+}
+function read_cookie(name) {
+    var result = document.cookie.match(new RegExp(name + '=([^;]+)'));
+    result && (result = JSON.parse(result[1]));
+    return result;
+}
+</script>
+</body>
+</html>
